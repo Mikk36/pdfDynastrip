@@ -309,14 +309,6 @@ namespace pdfDynastrip
             try
             {
                 files = new List<string>(Directory.EnumerateFiles(inputPath, "*.pdf"));
-                //if (files.Count == 1)
-                //{
-                //    Console.WriteLine("Found {0} file.", files.Count);
-                //}
-                //else
-                //{
-                //    Console.WriteLine("Found {0} files.", files.Count);
-                //}
                 files.ForEach(delegate (string name)
                 {
                     Console.WriteLine(name);
