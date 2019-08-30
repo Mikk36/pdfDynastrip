@@ -3,9 +3,6 @@ using System.IO;
 using System.Threading;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Acrobat;
 
@@ -16,8 +13,9 @@ namespace pdfDynastrip
         private static string inputPath = null;
         private static string outputPath = null;
         private static string copyPath = null;
+        private static string archivePath = null;
 
-        private static System.Threading.ManualResetEvent _quitEvent = new System.Threading.ManualResetEvent(false);
+        private static ManualResetEvent _quitEvent = new ManualResetEvent(false);
 
         private static AcroAVDoc g_AVDoc = null;
 
@@ -43,11 +41,10 @@ namespace pdfDynastrip
             Console.WriteLine("Watching folder: {0}", inputPath);
             Console.WriteLine("Output folder: {0}", outputPath);
             Console.WriteLine("Copy folder: {0}", copyPath);
-
-            //DelayedFileSystemWatcher dfw = new DelayedFileSystemWatcher(
-            //    inputPath,
-            //    "*.pdf"
-            //    );
+            if (archivePath != null)
+            {
+                Console.WriteLine("Archive folder: {0}", archivePath);
+            }
 
             FileSystemWatcher watcher = new FileSystemWatcher(inputPath, "*.pdf");
 
@@ -55,19 +52,12 @@ namespace pdfDynastrip
             {
                 _quitEvent.Set();
                 eArgs.Cancel = true;
-                //dfw.Dispose();
                 watcher.Dispose();
                 Console.WriteLine("Shutting down");
             };
 
-            //dfw.Created += new FileSystemEventHandler(NewFileHandler);
-            //dfw.ConsolidationInterval = 20000;
-            //dfw.EnableRaisingEvents = true;
-
             watcher.Created += new FileSystemEventHandler(NewFileHandler);
             watcher.EnableRaisingEvents = true;
-
-            //Console.WriteLine("Woohoo!");
 
             ParseFolder().ForEach(ProcessFile);
 
@@ -76,7 +66,7 @@ namespace pdfDynastrip
 
         private static bool CheckHelp(string[] args)
         {
-            if (args.Length > 1 && "/?".Equals(args[0]))
+            if (args.Length > 0 && "/?".Equals(args[0]))
             {
                 Console.WriteLine("Default input path is working directory");
                 Console.WriteLine("Output is \"out\" directory inside working directory");
@@ -84,6 +74,7 @@ namespace pdfDynastrip
                 Console.WriteLine("First parameter: input path");
                 Console.WriteLine("Second parameter: output path");
                 Console.WriteLine("Third parameter: copy path");
+                Console.WriteLine("Fourth parameter: archive path, optional");
                 return true;
             }
             return false;
@@ -130,9 +121,22 @@ namespace pdfDynastrip
                 copyPath = inputPath + @"\copy";
             }
 
+            if (args.Length > 3)
+            {
+                archivePath = args[3];
+                if (!Path.IsPathRooted(archivePath))
+                {
+                    archivePath = Path.GetFullPath(archivePath);
+                }
+            }
+
             inputPath += @"\";
             outputPath += @"\";
             copyPath += @"\";
+            if (archivePath != null)
+            {
+                archivePath += @"\";
+            }
 
             if (!Directory.Exists(inputPath) || !Directory.Exists(outputPath))
             {
@@ -196,6 +200,10 @@ namespace pdfDynastrip
             {
                 Console.WriteLine("{0}: Copying file", DateTime.Now);
                 File.Copy(file, copyPath + Path.GetFileName(file));
+                if(archivePath != null)
+                {
+                    File.Copy(file, archivePath + Path.GetFileName(file));
+                }
                 File.Delete(file);
                 Console.WriteLine("{0}: File deleted", DateTime.Now);
             }
